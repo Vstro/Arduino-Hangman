@@ -1,12 +1,13 @@
 #include <Keypad.h>
-#define ledpin 12
+#define redLedpin 12
+#define greenLedpin 13
 const byte ROWS = 4;
 const byte COLS = 4;
 char hexaKeys[ROWS][COLS] = {
-  {'0', '1', '2', '3'},
-  {'4', '5', '6', '7'},
-  {'8', '9', 'A', 'B'},
-  {'C', 'D', 'E', 'F'}
+  {'A', 'B', 'C', 'D'},
+  {'E', 'H', 'K', 'L'},
+  {'M', 'N', 'O', 'S'},
+  {'T', 'I', 'Y', 'X'}
 };
 byte rowPins[ROWS] = {6, 7, 8, 9};
 byte colPins[COLS] = {5, 4, 3, 2};
@@ -15,29 +16,63 @@ Keypad customKeypad = Keypad(makeKeymap(hexaKeys), colPins, rowPins, COLS, ROWS)
 #include <LiquidCrystal_I2C.h> // подключаем библиотеку для QAPASS 1602
 LiquidCrystal_I2C LCD(0x3F,16,2); // присваиваем имя LCD для дисплея
 void setup() {
-  pinMode(ledpin, OUTPUT);
+  pinMode(redLedpin, OUTPUT);
+  pinMode(greenLedpin, OUTPUT);
   LCD.init(); // инициализация LCD дисплея
-LCD.backlight(); // включение подсветки дисплея
-LCD.setCursor(1,0); // ставим курсор на 1 символ первой строки
-LCD.print("_"); // печатаем сообщение на первой строке
-LCD.print("_");
-LCD.print("_");
-LCD.print("_");
-LCD.print("_");
- Serial.begin(9600);
+  LCD.backlight(); // включение подсветки дисплея
+  LCD.setCursor(0,0); // ставим курсор на 1 символ первой строки
+  //PrintWord(LCD, "______"); // печатаем сообщение на первой строке
+  Serial.begin(9600);
 }
 void loop() {
   char customKey = customKeypad.getKey();
   Serial.println(customKey);
   if (customKey){
-    switch (customKey) {
-      case '1':
-      digitalWrite(ledpin, HIGH);
-      LCD.print("_");
-      break;
-      case '2':
-      digitalWrite(ledpin, LOW);
-      break;      
+    if (customKey != 'X'){
+      LCD.print(customKey);
+      WinLight();
     }
+    else{
+      LCD.clear();
+      LoseLight();
+    }
+      
+    /*switch (customKey) {
+      case 'A':
+      digitalWrite(greenLedpin, HIGH);
+      break;
+      case 'B':
+      digitalWrite(greenLedpin, LOW);
+      break;
+      case 'C':
+      digitalWrite(redLedpin, HIGH);
+      break;
+      case 'D':
+      digitalWrite(redLedpin, LOW);
+      break;      
+    }*/
   }
- }
+}
+void PrintWord(LiquidCrystal_I2C LCD, char* word){
+  int i = 0;
+  while(word[i]!='\0'){
+    LCD.print(word[i]);
+    i++;
+  }
+}
+void WinLight(){
+  for(int i = 0; i < 10; i++){
+    digitalWrite(greenLedpin, HIGH);
+    delay(100);
+    digitalWrite(greenLedpin, LOW);
+    delay(100);
+  }
+}
+void LoseLight(){
+  for(int i = 0; i < 10; i++){
+    digitalWrite(redLedpin, HIGH);
+    delay(100);
+    digitalWrite(redLedpin, LOW);
+    delay(100);
+  }
+}
