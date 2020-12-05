@@ -1,30 +1,45 @@
 #include <Keypad.h>
+#include <Wire.h> // библиотека для управления устройствами по I2C
+#include <LiquidCrystal_I2C.h> // подключаем библиотеку для QAPASS 1602
+
 #define redLedpin 12
 #define greenLedpin 13
+
 const byte ROWS = 4;
 const byte COLS = 4;
 char hexaKeys[ROWS][COLS] = {
   {'A', 'B', 'C', 'D'},
   {'E', 'H', 'K', 'L'},
   {'M', 'N', 'O', 'S'},
-  {'T', 'I', 'Y', 'X'}
+  {'T', 'I', 'U', 'R'}
 };
 byte rowPins[ROWS] = {6, 7, 8, 9};
 byte colPins[COLS] = {5, 4, 3, 2};
+char* words[6] = {"MODUL", "SKETCH", "NUMBER", "ATHEISM", "BRACKETS", "ENUMERATION"};
+char* tips[6] = {"Use this to get absolute value of number", "Rough drawing with pencil", "Mathematics studies this firstly", "Belief in absence of God", "Pair of delimiters", "Sequence of numbers"};
+char* secretWord = "";
+
 Keypad customKeypad = Keypad(makeKeymap(hexaKeys), colPins, rowPins, COLS, ROWS);
-#include <Wire.h> // библиотека для управления устройствами по I2C
-#include <LiquidCrystal_I2C.h> // подключаем библиотеку для QAPASS 1602
-LiquidCrystal_I2C LCD(0x3F,16,2); // присваиваем имя LCD для дисплея
+LiquidCrystal_I2C LCD(0x3F, 16, 2);
+
 void setup() {
   pinMode(redLedpin, OUTPUT);
   pinMode(greenLedpin, OUTPUT);
   LCD.init(); // инициализация LCD дисплея
   LCD.backlight(); // включение подсветки дисплея
-  LCD.setCursor(0,0); // ставим курсор на 1 символ первой строки
-  //PrintWord(LCD, "______"); // печатаем сообщение на первой строке
+  secretWord = words[randomInt() % 6];
+
+  LCD.setCursor(0,0);
+  LCD.autoScroll(); //???
+  PrintWord("Welcome to the Hangman!");
+  LCD.setCursor(0,1);
+  PrintWord("Guess secret word letter by letter to win! (Press any key to start)");
+  customKeypad.getKey();
   Serial.begin(9600);
 }
+
 void loop() {
+  PrintWord("");
   char customKey = customKeypad.getKey();
   Serial.println(customKey);
   if (customKey){
@@ -53,13 +68,15 @@ void loop() {
     }*/
   }
 }
-void PrintWord(LiquidCrystal_I2C LCD, char* word){
+
+void PrintWord(char* word){
   int i = 0;
   while(word[i]!='\0'){
     LCD.print(word[i]);
     i++;
   }
 }
+
 void WinLight(){
   for(int i = 0; i < 10; i++){
     digitalWrite(greenLedpin, HIGH);
@@ -68,6 +85,7 @@ void WinLight(){
     delay(100);
   }
 }
+
 void LoseLight(){
   for(int i = 0; i < 10; i++){
     digitalWrite(redLedpin, HIGH);
@@ -75,4 +93,11 @@ void LoseLight(){
     digitalWrite(redLedpin, LOW);
     delay(100);
   }
+}
+
+int RandomInt(){
+  PrintWord("Press random key");
+  int seed = (int)customKeypad.getKey();
+  LCD.clear();
+  return seed;
 }
