@@ -16,8 +16,10 @@ char hexaKeys[ROWS][COLS] = {
 byte rowPins[ROWS] = {6, 7, 8, 9};
 byte colPins[COLS] = {5, 4, 3, 2};
 char* words[6] = {"MODUL", "SKETCH", "NUMBER", "ATHEISM", "BRACKETS", "ENUMERATION"};
-char* tips[6] = {"Use this to get absolute value of number", "Rough drawing with pencil", "Mathematics studies this firstly", "Belief in absence of God", "Pair of delimiters", "Sequence of numbers"};
-char* secretWord = "";
+char* tips[6] = {"Absolute value of number", "Rough drawing with pencil", "Mathematics studies this firstly", "Belief in absence of God", "Pair of delimiters", "Sequence of numbers"};
+char* secretWord;
+char uncoveredWord[12];
+char failedGuesses[9];
 
 Keypad customKeypad = Keypad(makeKeymap(hexaKeys), colPins, rowPins, COLS, ROWS);
 LiquidCrystal_I2C LCD(0x3F, 16, 2);
@@ -27,46 +29,73 @@ void setup() {
   pinMode(greenLedpin, OUTPUT);
   LCD.init(); // инициализация LCD дисплея
   LCD.backlight(); // включение подсветки дисплея
-  secretWord = words[randomInt() % 6];
-
-  LCD.setCursor(0,0);
-  LCD.autoScroll(); //???
-  PrintWord("Welcome to the Hangman!");
-  LCD.setCursor(0,1);
-  PrintWord("Guess secret word letter by letter to win! (Press any key to start)");
-  customKeypad.getKey();
   Serial.begin(9600);
+  randomSeed(analogRead(0));
+  int secretNumber = random();
+  secretWord = words[secretNumber];
+  for (int i = 0; i < length(secretWord); i++){
+    uncoveredWord[i] = '_';
+  }
+
+  LCD.setCursor(0,0);  
+  PrintWord("Welcome to the");
+  LCD.setCursor(0,1);
+  PrintWord("Hangman!");
+  delay(2000);
+
+  LCD.clear();
+  LCD.setCursor(0,0);
+  PrintWord("Guess secret");
+  LCD.setCursor(0,1);
+  PrintWord("word to win!");
+  delay(2000);
+
+  LCD.clear();
+  LCD.setCursor(0,0);
+  PrintWord("Tip:");
+  LCD.setCursor(0,1);
+  PrintWord(tips[secretNumber]);
+  delay(4000);
+  for(int i = 0; i <= 16; i++){
+    LCD.scrollDisplayLeft();
+    delay(300);
+  }
+  delay(2000);
 }
 
 void loop() {
-  PrintWord("");
-  char customKey = customKeypad.getKey();
-  Serial.println(customKey);
-  if (customKey){
-    if (customKey != 'X'){
-      LCD.print(customKey);
-      WinLight();
-    }
-    else{
-      LCD.clear();
-      LoseLight();
-    }
-      
-    /*switch (customKey) {
-      case 'A':
-      digitalWrite(greenLedpin, HIGH);
-      break;
-      case 'B':
-      digitalWrite(greenLedpin, LOW);
-      break;
-      case 'C':
-      digitalWrite(redLedpin, HIGH);
-      break;
-      case 'D':
-      digitalWrite(redLedpin, LOW);
-      break;      
-    }*/
+  LCD.clear();
+  LCD.setCursor(0,0);
+  PrintWord(uncoveredWord);
+  LCD.setCursor(0,1);
+  for (int i = 0; i < length(failedGuesses); i++){
+    LCD.print(failedGuesses[i]);
+    LCD.print(',');
   }
+  
+  char customKey = customKeypad.getKey();
+  Guess(customKey);
+  if (failedGuesses[7] != '\0'){
+    LCD.clear();
+    LCD.setCursor(0,0);
+    PrintWord("You lost!");
+    LCD.setCursor(0,1);
+    PrintWord("Too many tries!");
+    LoseLight();
+    delay(100000);
+    return;
+  }
+  else if (IsWin()){
+    LCD.clear();
+    LCD.setCursor(0,0);
+    PrintWord("You won!");
+    LCD.setCursor(0,1);
+    PrintWord("Congratulations!");
+    WinLight();
+    delay(100000);
+    return;
+  }
+  
 }
 
 void PrintWord(char* word){
@@ -95,9 +124,30 @@ void LoseLight(){
   }
 }
 
-int RandomInt(){
-  PrintWord("Press random key");
-  int seed = (int)customKeypad.getKey();
-  LCD.clear();
-  return seed;
+void Guess(char ch){
+  bool fail = true;
+  for (int i = 0; i < length(secretWord); i++){
+    if (secretWord[i] == ch){
+      fail = false;
+      uncoveredWord[i] = ch;
+    }
+  }
+  if (fail){
+    failedGuesses[length(failedGuesses)] = ch;
+  }
+}
+
+int length(char* str){
+  int l = 0;
+  while(str[l] != '\0') l++;
+  return l;
+}
+
+bool IsWin(){
+  for (int i = 0; i < length(uncoveredWord); i++){
+    if (uncoveredWord[i] == '_'){
+      return false;
+    }
+  }
+  return true;
 }
